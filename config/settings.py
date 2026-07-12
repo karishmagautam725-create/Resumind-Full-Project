@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -133,6 +133,7 @@ USE_TZ = True
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
+ 
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
@@ -144,6 +145,17 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),   
+       "DEFAULT_PAGINATION_CLASS":
+            "core.pagination.StandardResultPagination",
+            "PAGE_SIZE": 10,
+
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ],
+        
+    
 }
 
 from datetime import timedelta

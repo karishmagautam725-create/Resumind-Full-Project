@@ -150,5 +150,4 @@ class ResumeDeleteAPIView(generics.DestroyAPIView):
         return Resume.objects.filter(
             user=self.request.user
         )
-    
-    
+

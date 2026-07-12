@@ -1,12 +1,20 @@
+
+
 from django.shortcuts import render
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from apps.analysis.models import ResumeAnalysis
 from apps.jobs.models import JobDescription
+from core.pagination import StandardResultPagination
 from .models import Resume
 from services.ats_service import analyze_resume
+from .serializers import AnalysisListSerializer,AnalysisDetailSerializer
+from rest_framework import generics
+
 
 # Create your views here.
 class ResumeAnalysisAPIView(APIView):
@@ -52,5 +60,29 @@ class ResumeAnalysisAPIView(APIView):
                         "ai_suggestion":report.ai_suggestion
                   }
             )
-                  
+
+
+class AnalysisListAPIView(generics.ListAPIView):
+      permission_classes=[IsAuthenticated]
+      serializer_class=AnalysisListSerializer
+      filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+      search_fields = ["resume__title", "job_description__title"]
+      ordering_fields = ["ats_score", "match_score", "created_at"]
+      filterset_fields = ["ats_score", "match_score"]
+      ordering = ["-created_at"]
+
+
+      pagination_class=StandardResultPagination
+      def get_queryset(self):
+            return ResumeAnalysis.objects.filter(resume__user=self.request.user).select_related("resume", "job_description").order_by("-created_at")
+
+class AnalysisDetailAPIView(generics.RetrieveAPIView):
+        permission_classes=[IsAuthenticated]
+        serializer_class=AnalysisDetailSerializer
+        def get_queryset(self):
+              return ResumeAnalysis.objects.filter(resume__user=self.request.user).select_related("resume", "job_description")
 
