@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render
 from rest_framework.generics import CreateAPIView,GenericAPIView
 from django.contrib.auth import get_user_model
@@ -7,10 +9,14 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from apps.users.serializers import LoginSerializer, RegisterSerializers
 from rest_framework.views import APIView
-
+from drf_spectacular.utils import extend_schema
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
-
+@extend_schema(
+    summary="Register User",
+    tags=["Authentication"],
+)
 class RegisterAPIView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializers
@@ -34,11 +40,17 @@ class RegisterAPIView(CreateAPIView):
                 },
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
+
+            
             },
             status=status.HTTP_201_CREATED,
+            
         )
-    
-
+    logger.info(f"User {User.id} registered successfully.")
+@extend_schema(
+    summary="Login User",
+    tags=["Authentication"],
+)
 class LoginAPIView(GenericAPIView):
     queryset = User.objects.all()
     serializer_class=LoginSerializer
@@ -61,7 +73,7 @@ class LoginAPIView(GenericAPIView):
             },
               status=status.HTTP_200_OK
         )
-    
+    logger.info(f"User {User.id} logged in.")
 
 class MeAPIView(APIView):
 

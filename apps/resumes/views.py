@@ -60,8 +60,29 @@ from services.parser_service import extract_text
 
 from .models import Resume
 from .serializers import UploadSerializer,ResumeListSerializer,ResumeDetailSerializer,ResumeUpdateSerializer
+from drf_spectacular.utils import extend_schema
+import logging
+
+logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    summary="Upload a resume",
+    description="""
+    Upload a PDF or DOCX resume.
+
+    The uploaded file is parsed and the extracted text
+    is stored for future ATS analysis.
+    """,
+    tags=["Resume"],
+    request=UploadSerializer,
+    responses={
+        201: UploadSerializer,
+        400: None,
+        401: None,
+        500: None,
+    },
+)
 class ResumeUploadAPIView(generics.CreateAPIView):
 
     queryset = Resume.objects.all()
@@ -71,6 +92,8 @@ class ResumeUploadAPIView(generics.CreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
+        logger.info(
+        f"User {request.user.id} started uploading a resume." )
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -86,15 +109,17 @@ class ResumeUploadAPIView(generics.CreateAPIView):
         )
 
         try:
+            logger.info(f"Started parsing resume {resume.id}.")
 
             extracted_text = extract_text(resume.file.path)
             resume.extracted_text = extracted_text
             resume.status = "completed"
-
+            
             resume.save()
+            logger.info(f"Resume {resume.id} uploaded successfully.")
 
         except Exception as e:
-
+            logger.error(f"Error occurred while processing resume: {str(e)}")
             resume.status = "failed"
             resume.save()
 
@@ -116,6 +141,10 @@ class ResumeUploadAPIView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED
         )
 
+@extend_schema(
+    summary="List User Resumes",
+    tags=["Resume"],
+)
 class ResumeListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class=ResumeListSerializer
@@ -123,6 +152,11 @@ class ResumeListAPIView(generics.ListAPIView):
     def  get_queryset(self):
         return Resume.objects.filter(user=self.request.user).order_by("-created_at")
 
+    
+@extend_schema(
+    summary="Resume Detail",
+    tags=["Resume"],
+)
 class ResumeDetailAPIView(generics.RetrieveAPIView):
       permission_classes = [IsAuthenticated]
       serializer_class=ResumeDetailSerializer

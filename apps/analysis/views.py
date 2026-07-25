@@ -1,5 +1,7 @@
 
 
+import logging
+
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -15,30 +17,38 @@ from services.ats_service import analyze_resume
 from .serializers import AnalysisListSerializer,AnalysisDetailSerializer
 from rest_framework import generics
 
-
+from drf_spectacular.utils import extend_schema
+logger = logging.getLogger(__name__)
 # Create your views here.
+@extend_schema(
+    summary="Analyze Resume",
+    tags=["Analysis"],
+)
 class ResumeAnalysisAPIView(APIView):
       permission_classes=[IsAuthenticated]
 
       def post (self,request):
             resume_id=request.data.get("resume_id")
             job_id=request.data.get("job_id")
-            try:
+            try: 
+                  logger.info("Resume analysis started.")
                   resume=Resume.objects.get(id = resume_id,user=request.user)
                   job=JobDescription.objects.get(id=job_id,user=request.user)
             except Resume.DoesNotExist:
+                  logger.warning("Resume not found.")
                   return Response(
                         {
                               "error":"Resume Not found"
                         }
                   )
             except JobDescription.DoesNotExist:
+                  logger.warning("Job Description not found.")
                   return Response(
                         {
                               "error":"Job Description Not found"
                         }
                   )
-            
+            logger.info("Resume and Job Description found.")
             analysis_result=analyze_resume(resume.extracted_text,job.job_description)
             report=ResumeAnalysis.objects.create(
                 resume=resume,
@@ -50,6 +60,7 @@ class ResumeAnalysisAPIView(APIView):
 
 
             )
+            logger.info(f"Analysis completed for report {report.id}.")
             return Response(
                   {
                         "message":"Analysis Completed",
