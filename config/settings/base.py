@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'drf_spectacular',
+    'celery'
 ]
 
 MIDDLEWARE = [
@@ -97,6 +98,16 @@ DATABASES = {
         'HOST':config("DB_HOST"),
         'PORT':config("DB_PORT"),
 
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{config('REDIS_HOST')}:{config('REDIS_PORT')}/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
     }
 }
 
@@ -218,3 +229,15 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+# CELERY_BROKER_URL = "redis://redis:6379/0"
+# CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    "redis://redis:6379/0",
+)
+
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    "redis://redis:6379/0",
+)

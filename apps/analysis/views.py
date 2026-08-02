@@ -16,7 +16,7 @@ from .models import Resume
 from services.ats_service import analyze_resume
 from .serializers import AnalysisListSerializer,AnalysisDetailSerializer
 from rest_framework import generics
-
+from core.cache import clear_dashboard_cache
 from drf_spectacular.utils import extend_schema
 logger = logging.getLogger(__name__)
 # Create your views here.
@@ -60,6 +60,7 @@ class ResumeAnalysisAPIView(APIView):
 
 
             )
+            clear_dashboard_cache(request.user)
             logger.info(f"Analysis completed for report {report.id}.")
             return Response(
                   {

@@ -62,6 +62,7 @@ from .models import Resume
 from .serializers import UploadSerializer,ResumeListSerializer,ResumeDetailSerializer,ResumeUpdateSerializer
 from drf_spectacular.utils import extend_schema
 import logging
+from core.cache import clear_dashboard_cache
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,8 @@ class ResumeUploadAPIView(generics.CreateAPIView):
             resume.status = "completed"
             
             resume.save()
+            clear_dashboard_cache(request.user)
+            logger.info("Dashboard cache cleared.")
             logger.info(f"Resume {resume.id} uploaded successfully.")
 
         except Exception as e:
