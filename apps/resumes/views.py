@@ -62,6 +62,7 @@ from .models import Resume
 from .serializers import UploadSerializer,ResumeListSerializer,ResumeDetailSerializer,ResumeUpdateSerializer
 from drf_spectacular.utils import extend_schema
 import logging
+from apps.resumes.tasks import process_resume
 from core.cache import clear_dashboard_cache
 
 logger = logging.getLogger(__name__)
@@ -109,37 +110,16 @@ class ResumeUploadAPIView(generics.CreateAPIView):
             status="processing",
         )
 
-        try:
-            logger.info(f"Started parsing resume {resume.id}.")
-
-            extracted_text = extract_text(resume.file.path)
-            resume.extracted_text = extracted_text
-            resume.status = "completed"
-            
-            resume.save()
-            clear_dashboard_cache(request.user)
-            logger.info("Dashboard cache cleared.")
-            logger.info(f"Resume {resume.id} uploaded successfully.")
-
-        except Exception as e:
-            logger.error(f"Error occurred while processing resume: {str(e)}")
-            resume.status = "failed"
-            resume.save()
-
-            return Response(
-                {
-                    "error": str(e)
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
+        logger.info(f"Resume {resume.id} uploaded successfully.")
+        process_resume.delay(resume.id)
+        logger.info(f"Resume {resume.id} queued for background processing.")
+        
         return Response(
             {
                 "message": "Resume uploaded successfully",
                 "resume_id": resume.id,
                 "title": resume.title,
                 "status": resume.status,
-                "extracted_text": resume.extracted_text,
             },
             status=status.HTTP_201_CREATED
         )

@@ -53,6 +53,7 @@ urlpatterns = [
     path('api/jobs/',include("apps.jobs.urls")),
     path('api/analyze/',include("apps.analysis.urls")),
     path('api/dashboard/',include("apps.dashboard.urls")),
+    # path("api/ai/", include("apps.ai.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(

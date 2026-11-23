@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.resumes',
     'apps.jobs',
+    'apps.ai',
     'apps.dashboard',
     'apps.analysis',
     'rest_framework',
@@ -51,10 +52,12 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'drf_spectacular',
-    'celery'
+    'celery',
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -177,7 +180,7 @@ REST_FRAMEWORK = {
 
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     # Add 'rest_framework_simplejwt.token_blacklist' to INSTALLED_APPS 
     # if you want to use token blacklisting for logout.
@@ -194,6 +197,9 @@ MEDIA_ROOT=BASE_DIR / "media"
 
 import os
 
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -207,7 +213,7 @@ LOGGING = {
     "handlers": {
         "file": {
             "class": "logging.FileHandler",
-            "filename": BASE_DIR / "logs/app.log",
+            "filename": LOG_DIR / "app.log",
             "formatter": "standard",
             "level": config("LOG_LEVEL"),
         },
@@ -241,3 +247,26 @@ CELERY_RESULT_BACKEND = os.getenv(
     "CELERY_RESULT_BACKEND",
     "redis://redis:6379/0",
 )
+
+MISTRAL_API_KEY = config("MISTRAL_API_KEY")
+MISTRAL_MODEL = config("MISTRAL_MODEL")
+
+OPENROUTER_API_KEY = config("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = config("OPENROUTER_MODEL")
+OPENROUTER_BASE_URL = config(
+    "OPENROUTER_BASE_URL",
+    default="https://openrouter.ai/api/v1",
+)
+
+AI_PROVIDER = config(
+    "AI_PROVIDER",
+    default="openrouter",
+)
+
+MISTRAL_EMBEEDING_MODEL=config("MISTRAL_EMBEEDING_MODEL")
+
+CORS_ALLOWED_ORIGINS = [
+    
+    "http://localhost:5173",
+    
+]

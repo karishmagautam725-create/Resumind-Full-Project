@@ -18,6 +18,8 @@ from .serializers import AnalysisListSerializer,AnalysisDetailSerializer
 from rest_framework import generics
 from core.cache import clear_dashboard_cache
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from .tasks import process_analysis
 logger = logging.getLogger(__name__)
 # Create your views here.
 @extend_schema(
@@ -28,50 +30,61 @@ class ResumeAnalysisAPIView(APIView):
       permission_classes=[IsAuthenticated]
 
       def post (self,request):
-            resume_id=request.data.get("resume_id")
-            job_id=request.data.get("job_id")
-            try: 
-                  logger.info("Resume analysis started.")
-                  resume=Resume.objects.get(id = resume_id,user=request.user)
-                  job=JobDescription.objects.get(id=job_id,user=request.user)
-            except Resume.DoesNotExist:
-                  logger.warning("Resume not found.")
-                  return Response(
-                        {
-                              "error":"Resume Not found"
-                        }
-                  )
-            except JobDescription.DoesNotExist:
-                  logger.warning("Job Description not found.")
-                  return Response(
-                        {
-                              "error":"Job Description Not found"
-                        }
-                  )
-            logger.info("Resume and Job Description found.")
-            analysis_result=analyze_resume(resume.extracted_text,job.job_description)
-            report=ResumeAnalysis.objects.create(
-                resume=resume,
-                job_description=job,
-                ats_score=analysis_result["ats_score"],
-                match_score=analysis_result["match_score"],
-                missing_keyword=analysis_result["missing_keywords"],
-                ai_suggestion=analysis_result["feedback"]
+         
+        resume_id = request.data.get("resume_id")
+        job_id = request.data.get("job_id")
 
+        try:
 
-            )
-            clear_dashboard_cache(request.user)
-            logger.info(f"Analysis completed for report {report.id}.")
+            resume = Resume.objects.get(id=resume_id,user=request.user)
+            job = JobDescription.objects.get(id=job_id,user=request.user)
+
+        except Resume.DoesNotExist:
+
+            logger.warning(f"Resume {resume_id} not found.")
+
             return Response(
-                  {
-                        "message":"Analysis Completed",
-                        "report_id":report.id,
-                        "ats_score":report.ats_score,
-                        "matched_score":report.match_score,
-                        "missing_keyword":report.missing_keyword,
-                        "ai_suggestion":report.ai_suggestion
-                  }
+                {
+                    "error": "Resume not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
             )
+
+        except JobDescription.DoesNotExist:
+
+            logger.warning(f"Job {job_id} not found.")
+
+            return Response(
+                {
+                    "error": "Job Description not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if resume.status != "completed":
+
+            return Response(
+                {
+                    "error": "Resume is still processing."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        process_analysis.delay(
+            resume.id,
+            job.id,
+        )
+
+        logger.info(f"Analysis task queued for resume {resume.id}")
+
+        return Response(
+            {
+                "message": "Analysis started successfully.",
+                "resume_id": resume.id,
+                "status": "processing",
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class AnalysisListAPIView(generics.ListAPIView):
