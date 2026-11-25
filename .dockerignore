@@ -7,3 +7,7 @@ __pycache__
 media
 logs
 .vscode
+chroma_db/
+
+Chroma_db/
+

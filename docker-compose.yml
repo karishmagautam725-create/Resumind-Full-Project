@@ -5,9 +5,9 @@ services:
     container_name: postgres_db
 
     environment:
-      POSTGRES_DB: resume_checker_db
-      POSTGRES_USER: resume_user
-      POSTGRES_PASSWORD: 2004
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
 
     ports:
       - "5432:5432"
