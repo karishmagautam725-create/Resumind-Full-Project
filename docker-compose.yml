@@ -44,11 +44,11 @@ services:
       - redis
 
     environment:
-      DB_NAME: resume_checker_db
-      DB_USER: resume_user
-      DB_PASSWORD: 2004
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: db
-      DB_PORT: 5432
+      DB_PORT: ${DB_PORT}
 
 
   worker:
